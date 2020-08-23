@@ -3,7 +3,8 @@ import store from "../store"
 import router from "../router"
 import { Message } from "element-ui"
 
-export const baseurl = process.env.NODE_ENV === "production" ? "/web" : "http://192.168.99.11:8006/"
+export const baseurl = process.env.NODE_ENV === "production" ? "/web" : "http://192.168.99.11:8006"
+export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/socket.io" : "http://192.168.99.11:9091"
 
 axios.defaults.withCredentials = true
 // 创建axios实例

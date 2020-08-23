@@ -93,7 +93,7 @@
                  :close-on-press-escape="false"
                  :show-close="true"
                  :visible.sync="dialogSingle1V1Visible" >
-          <Single1V1VideoFrame :myUsername="myUsername" v-if="dialogSingle1V1Visible"   ref="dialogSingle1V1VisibleRef"></Single1V1VideoFrame>
+          <Single1V1VideoFrame :socket="socket" v-if="dialogSingle1V1Visible" :userInfo="userInfo" :chatTarget="chatTarget"   ref="dialogSingle1V1VisibleRef"></Single1V1VideoFrame>
           <span slot="footer" class="dialog-footer">
               <el-button type="primary" @click="closeNativeVideo">关闭本地画面</el-button>
                 <el-button type="primary" @click="hangUp">挂断</el-button>
@@ -127,6 +127,7 @@ import Single1V1VideoFrame from "../components/Single1V1VideoFrame";
 import UserList from "../components/UserList";
 import FriendsUserList from "../components/FriendsUserList";
 import {loadReceivingFriends, loadUserFriendsPage,loadMessages} from '../api/commonApi'
+import {socketBaseUrl} from "../util/http";
 
 export default {
   name: 'Home',
@@ -156,22 +157,22 @@ export default {
   },
   created() {
       this.init()
-      //用户列表mock
-      let obj01 = {id:1,avatarUrl:"https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/img-article/photo-1596492784531-6e6eb5ea9993.jpg",chatName:'我的客服'}
-      let obj02 = {id:2,avatarUrl:"https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/img-article/photo-1596492784531-6e6eb5ea9993.jpg",chatName:'开发小分队开发小分队开发小分队开发小分队'}
-      let obj03 = {id:3,avatarUrl:"https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/img-article/photo-1596492784531-6e6eb5ea9993.jpg",chatName:'社会主义接班人'}
-      this.chatList.push(obj01)
-      this.chatList.push(obj02)
-      this.chatList.push(obj03)
-       //聊天记录mock
-      let aa = {username:'苏克',imageUrl:'',createTime:'2020-08-15 12:43:48',avatarUrl:'https://static.easyicon.net/preview/128/1285983.gif',message:'哈喽 大家好'}
-      let bb = {username:'suc',imageUrl:'',createTime:'2020-08-15 15:23:04',avatarUrl:'https://static.easyicon.net/preview/127/1276547.gif',message:'你好 你好'}
-      let cc = {username:'fight',imageUrl:'',createTime:'2020-08-15 16:35:33',avatarUrl:'https://static.easyicon.net/preview/127/1273254.gif',message:'哈哈哈哈  划水'}
-      let bb2 = {username:'suc',imageUrl:'',createTime:'2020-08-15 17:43:52',avatarUrl:'https://static.easyicon.net/preview/127/1276547.gif',message:'emmmm'}
-      this.chatHistoryList.push(aa)
-      this.chatHistoryList.push(bb)
-      this.chatHistoryList.push(cc)
-      this.chatHistoryList.push(bb2)
+      // //用户列表mock
+      // let obj01 = {id:1,avatarUrl:"https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/img-article/photo-1596492784531-6e6eb5ea9993.jpg",chatName:'我的客服'}
+      // let obj02 = {id:2,avatarUrl:"https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/img-article/photo-1596492784531-6e6eb5ea9993.jpg",chatName:'开发小分队开发小分队开发小分队开发小分队'}
+      // let obj03 = {id:3,avatarUrl:"https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/img-article/photo-1596492784531-6e6eb5ea9993.jpg",chatName:'社会主义接班人'}
+      // this.chatList.push(obj01)
+      // this.chatList.push(obj02)
+      // this.chatList.push(obj03)
+      //  //聊天记录mock
+      // let aa = {username:'苏克',imageUrl:'',createTime:'2020-08-15 12:43:48',avatarUrl:'https://static.easyicon.net/preview/128/1285983.gif',message:'哈喽 大家好'}
+      // let bb = {username:'suc',imageUrl:'',createTime:'2020-08-15 15:23:04',avatarUrl:'https://static.easyicon.net/preview/127/1276547.gif',message:'你好 你好'}
+      // let cc = {username:'fight',imageUrl:'',createTime:'2020-08-15 16:35:33',avatarUrl:'https://static.easyicon.net/preview/127/1273254.gif',message:'哈哈哈哈  划水'}
+      // let bb2 = {username:'suc',imageUrl:'',createTime:'2020-08-15 17:43:52',avatarUrl:'https://static.easyicon.net/preview/127/1276547.gif',message:'emmmm'}
+      // this.chatHistoryList.push(aa)
+      // this.chatHistoryList.push(bb)
+      // this.chatHistoryList.push(cc)
+      // this.chatHistoryList.push(bb2)
     },
   mounted() {
 
@@ -222,7 +223,7 @@ export default {
           let params = {
               query: 'uid=' + username
           };
-          this.socket = io.connect('http://192.168.99.11:9091', params);
+          this.socket = io.connect(socketBaseUrl, params);
       },
       //选择聊天对象
       chooseChat(item){
@@ -377,6 +378,7 @@ export default {
           const that = this;
           that.dialogFriendsUserList = true;
       },
+      //关闭好友申请处理框
       closeFriendsUserListDialog(){
           const that = this;
           that.dialogFriendsUserList = false;
@@ -385,15 +387,7 @@ export default {
 
     },
     watch:{
-      chatObjectCSS : {
-          handler () {
-              // eslint-disable-next-line no-undef
-              newVal.forEach(item => {
-                  console.log("item",item)
-              })
-          },
-          deep: true
-        }
+
     }
 }
 </script>

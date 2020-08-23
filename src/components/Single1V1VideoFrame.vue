@@ -7,18 +7,37 @@
 
 
 <script>
-export default {
+
+    const PeerConnection = window.RTCPeerConnection ||
+        window.mozRTCPeerConnection ||
+        window.webkitRTCPeerConnection;
+    export default {
     name: "Single1V1VideoFrame",
+    props:['socket','userInfo','chatTarget'],
     data(){
         return{
             localStream:'',//本地视频流
+            remoteStream:null,
             localPeer:'',
-
+            offerOption: {
+                offerToReceiveAudio: 1,
+                offerToReceiveVideo: 1
+            },
+            remoteAccount:'',
+            iceServers:{
+                iceServers: [
+                    { url: "stun:stun.l.google.com:19302"}, // 谷歌的公共服务
+                    {
+                        url: 'turn:numb.viagenie.ca',
+                        credential: 'muazkh',
+                        username: 'webrtc@live.com'
+                    },
+                ],
+                sdpSemantics:'plan-b'
+            },
+            pc:'',
 
         }
-    },
-    props:{
-        myUsername:String,
     },
     created() {
         console.log('重新初始化')
@@ -76,7 +95,91 @@ export default {
             if(this.localPeer){
                 this.localPeer.close();
             }
-        }
+        },
+        //初始化 PeerConnection
+        initPeer(){
+            const that = this;
+            that.pc = new PeerConnection(this.iceServers);
+            that.pc.addStream(this.localStream);
+            that.pc.onicecandidate = function(event) {
+                console.log("监听ice候选信息",event.candidate)
+                if (event.candidate) {
+                    let params ={username:that.username,target:that.remoteAccount,candidate:event.candidate}
+                    that.socket.emit("candidate",params)
+                }else{
+                    console.log("ICE收集已经完成")
+                }
+            };
+            that.pc.onaddstream = (event) => {
+                console.log("监听到视频加入 onaddstream",event)
+                let video = document.querySelector('#remote');
+                video.srcObject = event.stream;
+            };
+        },
+        //监听服务器信息
+        onListener(){
+            const that = this;
+            that.socket.on("candidate",function (e) {
+                console.log("服务器发送 candidate",e)
+                that.onIceCandidate(e)
+            })
+            that.socket.on("join",function (e) {
+                console.log("服务器发送 join",e)
+                that.onJoin(e)
+            })
+            that.socket.on("offer",function (e) {
+                console.log("服务器发送 offer",e)
+                that.onOffer(e)
+            })
+            that.socket.on("answer",function (e) {
+                console.log("服务器发送 answer",e)
+                that.onAnswer(e)
+            })
+            // that.socket.on("1v1Prepare",function (e) {
+            //     console.log("服务器发送 1v1Prepare",e)
+            //     that.controls(e)
+            // })
+            // that.socket.on("refresh",function (e) {
+            //     console.log("服务器发送 刷新列表 refresh",e)
+            //     that.onJoin(e)
+            // })
+        },
+        //监听 Ice 候选
+        async onIceCandidate(data) {
+            const that = this;
+            await that.pc.addIceCandidate(data.candidate)
+        },
+        //监听远端offer
+        async onOffer(data) {
+            const that = this;
+            await that.pc.setRemoteDescription(data.data)
+            // 接收端创建 answer
+            let answer = await that.pc.createAnswer();
+            // 接收端设置本地 answer 描述
+            await that.pc.setLocalDescription(answer);
+            //发送到呼叫端 answer
+            let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:this.chatTarget.type,data:answer}
+            // let params = {username:that.username,target:that.remoteAccount,answer:answer}
+            that.socket.emit("answer",params)
+        },
+        //监听远程响应
+        async onAnswer(data) {
+            const that = this;
+            // 发送端 设置远程 answer 描述
+            await that.pc.setRemoteDescription(data.data);
+        },
+        //创建连接
+        async onCreateOffer() {
+            const that = this;
+            //创建offer
+            let offer = await that.pc.createOffer(this.offerOption);
+            console.log("呼叫端 offer",offer)
+            //设置本地描述
+            await that.pc.setLocalDescription(offer)
+            //远程发送到服务器
+            let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:this.chatTarget.type,data:offer}
+            that.socket.emit("offer",params)
+        },
 
     },
     watch:{
