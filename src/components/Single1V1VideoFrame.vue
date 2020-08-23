@@ -79,6 +79,9 @@
         async createMedia() {
             const that = this;
             let streamTep = null;
+            if( !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia ){
+                console.log('getUserMedia is not support!')
+            }
             try {
                 streamTep = await navigator.mediaDevices.getUserMedia({audio: true, video: true})
                 console.log("media stream create =>",streamTep)
