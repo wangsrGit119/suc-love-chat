@@ -3,8 +3,8 @@ import store from "../store"
 import router from "../router"
 import { Message } from "element-ui"
 
-export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web" : "https://webrtc.qdhuazhiyao.cn/suc-web"
-export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/socket.io" : "https://webrtc.qdhuazhiyao.cn/"
+export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web/" : "https://webrtc.qdhuazhiyao.cn/suc-web"
+export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/" : "wss://webrtc.qdhuazhiyao.cn/"
 
 axios.defaults.withCredentials = true
 // 创建axios实例
