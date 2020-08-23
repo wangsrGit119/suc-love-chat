@@ -279,14 +279,20 @@ export default {
       //视频聊天
       videoWithPartner(){
           this.dialogSingle1V1Visible = true;
-
+          let data = {type:1,info:"呼叫",userId:this.userInfo.userId,username:this.userInfo.username}
+          let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
+          this.socket.emit("1V1CommunicateVideo",params)
       },
       closeNativeVideo(){
           this.$refs['dialogSingle1V1VisibleRef'].closeNativeVideo()
       },
       hangUp(){
-        // this.dialogSingle1V1Visible = false
+          let data = {type:3,info:"挂断",username:this.userInfo.username}
+          let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
+          this.socket.emit("1V1CommunicateVideo",params)
+          this.dialogSingle1V1Visible = false;
           this.$refs['dialogSingle1V1VisibleRef'].hangUp()
+          this.$router.go(0)
       },
       //注销登录
       logout(){
@@ -323,7 +329,7 @@ export default {
               })
           });
           that.socket.on("sendMessage", function (e) {
-              console.log(e)
+              console.log("sendMessage",e)
               //1.点对点
               if(e.targetType===1){
                   that.$notify({
@@ -348,7 +354,7 @@ export default {
 
           });
           that.socket.on("newFriendsNotify",function (e) {
-              console.log(e)
+              console.log("newFriendsNotify",e)
               that.$notify({
                   title:'提示',
                   message: e.message,
@@ -358,8 +364,49 @@ export default {
                   that.loadNewFriends();
                   that.loadCommunicationUser()
               },2000)
-
           });
+          that.socket.on("1V1CommunicateVideo",function (e) {
+              console.log("1V1CommunicateVideo",e)
+              //呼叫
+              if(e.data.type===1){
+                  that.$confirm('用户'+e.data.username+' 是申请视频通话，是否接听?', '提示', {
+                      closeOnClickModal:false,
+                      closeOnPressEscape:false,
+                      confirmButtonText: '确定',
+                      cancelButtonText: '取消',
+                      type: 'warning'
+                  }).then(() => {
+                      let data = {type:2,info:"接通",username:that.userInfo.username}
+                      let params = {userId:that.userInfo.userId,targetId:e.data.userId,targetName:e.data.username,targetType:e.targetType,data:data}
+                      that.socket.emit("1V1CommunicateVideo",params)
+                      that.dialogSingle1V1Visible = true;
+                  }).catch(() => {
+                      let data = {type:3,info:"拒接",username:that.userInfo.username}
+                      let params = {userId:that.userInfo.userId,targetId:e.data.userId,targetName:e.data.username,targetType:e.targetType,data:data}
+                      that.socket.emit("1V1CommunicateVideo",params)
+                  });
+                  //用户接通通知
+              }else if(e.data.type===2){
+                  that.$message({
+                      type: 'info',
+                      message: e.data.username+'用户'+e.data.info
+                  });
+                  console.log(that.$refs)
+                  //接通后创建offer
+                  that.$refs['dialogSingle1V1VisibleRef'].onCreateOffer();
+                  //拒接和挂断通知
+              }else if(e.data.type===3){
+                  that.$message({
+                      type: 'error',
+                      message: e.data.username+'用户'+e.data.info
+                  });
+                  that.dialogSingle1V1Visible = false;
+                  that.$router.go(0)
+              }
+          });
+          that.socket.on("notOnline",function (e) {
+              that.$message.error(e)
+          })
       },
       changeCss(params){
           this.chatObjectCSS[params]={

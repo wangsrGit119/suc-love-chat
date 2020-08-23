@@ -8,7 +8,7 @@
 
 <script>
 
-    const PeerConnection = window.RTCPeerConnection ||
+    var PeerConnection = window.RTCPeerConnection ||
         window.mozRTCPeerConnection ||
         window.webkitRTCPeerConnection;
     export default {
@@ -49,7 +49,9 @@
     methods:{
         async init() {
             await this.createNative();
-            this.nativeMedia()
+            this.nativeMedia();
+            this.initPeer();
+            this.onListener();
 
         },
         //创建本地流全局放置
@@ -66,6 +68,7 @@
                 video.srcObject = that.localStream;
             } else {
                 video.src = window.URL.createObjectURL(that.localStream);
+                video.volume = 0
             }
             // eslint-disable-next-line no-unused-vars
             video.onloadedmetadata = function(e) {
@@ -104,7 +107,8 @@
             that.pc.onicecandidate = function(event) {
                 console.log("监听ice候选信息",event.candidate)
                 if (event.candidate) {
-                    let params ={username:that.username,target:that.remoteAccount,candidate:event.candidate}
+                    let candidate_data = {userId:that.userInfo.userId,username:that.userInfo.username,candidate:event.candidate}
+                    let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:that.chatTarget.type,data:candidate_data}
                     that.socket.emit("candidate",params)
                 }else{
                     console.log("ICE收集已经完成")
@@ -114,6 +118,10 @@
                 console.log("监听到视频加入 onaddstream",event)
                 let video = document.querySelector('#remote');
                 video.srcObject = event.stream;
+                // eslint-disable-next-line no-unused-vars
+                video.onloadedmetadata = function(e) {
+                    video.play();
+                };
             };
         },
         //监听服务器信息
@@ -147,37 +155,38 @@
         //监听 Ice 候选
         async onIceCandidate(data) {
             const that = this;
-            await that.pc.addIceCandidate(data.candidate)
+            await that.pc.addIceCandidate(data.data.candidate)
         },
         //监听远端offer
         async onOffer(data) {
             const that = this;
-            await that.pc.setRemoteDescription(data.data)
+            await that.pc.setRemoteDescription(data.data.offer)
             // 接收端创建 answer
             let answer = await that.pc.createAnswer();
             // 接收端设置本地 answer 描述
             await that.pc.setLocalDescription(answer);
             //发送到呼叫端 answer
-            let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:this.chatTarget.type,data:answer}
-            // let params = {username:that.username,target:that.remoteAccount,answer:answer}
+            let answer_data = {userId:that.userInfo.userId,username:that.userInfo.username,answer:answer}
+            let params = {userId:that.userInfo.userId,targetId:data.data.userId,targetName:data.data.username,targetType:data.targetType,data:answer_data}
             that.socket.emit("answer",params)
         },
         //监听远程响应
         async onAnswer(data) {
             const that = this;
             // 发送端 设置远程 answer 描述
-            await that.pc.setRemoteDescription(data.data);
+            await that.pc.setRemoteDescription(data.data.answer);
         },
         //创建连接
         async onCreateOffer() {
             const that = this;
             //创建offer
             let offer = await that.pc.createOffer(this.offerOption);
-            console.log("呼叫端 offer",offer)
+            console.log("呼叫端 创建 offer",offer)
             //设置本地描述
             await that.pc.setLocalDescription(offer)
             //远程发送到服务器
-            let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:this.chatTarget.type,data:offer}
+            let data = {offer:offer,userId:that.userInfo.userId,username:that.userInfo.username,info:"发送offer"}
+            let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:that.chatTarget.type,data:data}
             that.socket.emit("offer",params)
         },
 
@@ -198,8 +207,8 @@
         background-color: black;
     }
     .Single1V1Video video{
-        width: 400px;
-        height: 350px;
+        width: 220px;
+        height: 200px;
     }
 
 </style>
