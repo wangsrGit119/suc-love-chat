@@ -3,7 +3,7 @@ import store from "../store"
 import router from "../router"
 import { Message } from "element-ui"
 
-export const baseurl = process.env.NODE_ENV === "production" ? "/web" : "https://webrtc.qdhuazhiyao.cn/suc-web"
+export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web" : "https://webrtc.qdhuazhiyao.cn/suc-web"
 export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/socket.io" : "https://webrtc.qdhuazhiyao.cn/"
 
 axios.defaults.withCredentials = true
