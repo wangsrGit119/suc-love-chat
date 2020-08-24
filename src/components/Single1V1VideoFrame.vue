@@ -2,6 +2,8 @@
     <div class="Single1V1Video">
         <video id="local" controls="controls"> </video>
         <video id="remote" controls="controls"> </video>
+        <el-button type="primary" @click="init">呼叫</el-button>
+        <el-button type="primary" @click="hangUp">挂断</el-button>
     </div>
 </template>
 
@@ -49,10 +51,9 @@
     methods:{
         async init() {
             await this.createNative();
-            this.nativeMedia();
-            this.initPeer();
-            this.onListener();
-
+            await this.nativeMedia();
+            await this.initPeer();
+            await this.onListener();
         },
         //创建本地流全局放置
         async createNative() {
@@ -62,6 +63,7 @@
         // 本地摄像头打开
         nativeMedia(){
             const that = this;
+            console.log("open local video",that.localStream)
             let video = document.querySelector('#local');
             // 旧的浏览器可能没有srcObject
             if ("srcObject" in video) {
@@ -79,11 +81,15 @@
         async createMedia() {
             const that = this;
             let streamTep = null;
+            console.log("start prepare localStream origin")
             if( !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia ){
                 console.log('getUserMedia is not support!')
             }
             try {
-                streamTep = await navigator.mediaDevices.getUserMedia({audio: true, video: true})
+                await navigator.mediaDevices.getUserMedia({audio: true, video: true}).then(function (mediaStream) {
+                    console.log("mediaStream",mediaStream)
+                    streamTep = mediaStream;
+                })
                 console.log("media stream create =>",streamTep)
             }catch (e) {
                 that.$message.warning("获取媒体设备异常")
@@ -105,8 +111,8 @@
         //初始化 PeerConnection
         initPeer(){
             const that = this;
-            that.pc = new PeerConnection(this.iceServers);
-            that.pc.addStream(this.localStream);
+            that.pc = new PeerConnection(that.iceServers);
+            that.pc.addStream(that.localStream);
             that.pc.onicecandidate = function(event) {
                 console.log("监听ice候选信息",event.candidate)
                 if (event.candidate) {

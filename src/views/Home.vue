@@ -393,7 +393,9 @@ export default {
                   });
                   console.log(that.$refs)
                   //接通后创建offer
-                  that.$refs['dialogSingle1V1VisibleRef'].onCreateOffer();
+                  setTimeout(function () {
+                      that.$refs['dialogSingle1V1VisibleRef'].onCreateOffer();
+                  },5000)
                   //拒接和挂断通知
               }else if(e.data.type===3){
                   that.$message({
