@@ -1,9 +1,7 @@
 <template>
     <div class="Single1V1Video">
-        <video id="local" controls="controls"> </video>
+        <video id="local" muted controls="controls"> </video>
         <video id="remote" controls="controls"> </video>
-        <el-button type="primary" @click="init">呼叫</el-button>
-        <el-button type="primary" @click="hangUp">挂断</el-button>
     </div>
 </template>
 
