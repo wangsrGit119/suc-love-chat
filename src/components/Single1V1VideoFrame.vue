@@ -83,17 +83,19 @@
             let streamTep = null;
             console.log("start prepare localStream origin")
             if( !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia ){
+                that.$message.error("设备不支持")
                 console.log('getUserMedia is not support!')
             }
-            try {
-                await navigator.mediaDevices.getUserMedia({audio: true, video: true}).then(function (mediaStream) {
+                await navigator.mediaDevices.getUserMedia({audio: true, video: true})
+                    .then(function (mediaStream) {
                     console.log("mediaStream",mediaStream)
+                        // //eslint-disable-next-line no-debugger
+                        // debugger
                     streamTep = mediaStream;
+                }).catch(error=>{
+                    console.log("获取媒体设备异常",error)
+                    that.$message.warning("获取媒体设备异常")
                 })
-                console.log("media stream create =>",streamTep)
-            }catch (e) {
-                that.$message.warning("获取媒体设备异常")
-            }
             return streamTep;
         },
         //关闭本地画面

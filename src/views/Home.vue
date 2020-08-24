@@ -180,7 +180,7 @@ export default {
   },
   methods:{
       //初始化基础信息
-      init(){
+      async init(){
           const that = this;
           that.isInit = true;
           //初始化socket
@@ -193,6 +193,8 @@ export default {
           that.loadNewFriends()
           //监听消息
           that.onListener()
+
+
      },
       //加载通讯录列表
       loadCommunicationUser(){
