@@ -417,6 +417,7 @@ export default {
               'animation':"msg-me 2s infinite",
               '-webkit-animation':"msg-me 5s",
           };
+          this.$forceUpdate()
           console.log(this.chatObjectCSS)
       },
       //前往搜索结果页面
