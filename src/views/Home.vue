@@ -51,7 +51,7 @@
                       <el-avatar :size="30" :src="item.avatarUrl"></el-avatar>
                   </div>
                   <div  class="chatNameAndMessage" >
-                      <span class="chatNameAndMessage-name" >{{item.username}} : {{item.createTime}}</span>
+                      <span class="chatNameAndMessage-name" >{{item.nickname}} : {{item.createTime}}</span>
                       <span class="chatNameAndMessage-message" >{{item.message}}</span>
                       <el-image
                               v-if="item.imageUrl !== '' && item.imageUrl !== null"
