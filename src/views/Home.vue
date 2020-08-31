@@ -91,7 +91,7 @@
       <el-dialog title="视频通话中"
                  :close-on-click-modal="false"
                  :close-on-press-escape="false"
-                 :show-close="true"
+                 :show-close="false"
                  :visible.sync="dialogSingle1V1Visible" >
           <Single1V1VideoFrame :socket="socket" v-if="dialogSingle1V1Visible" :userInfo="userInfo" :chatTarget="chatTarget"   ref="dialogSingle1V1VisibleRef"></Single1V1VideoFrame>
           <span slot="footer" class="dialog-footer">
@@ -103,7 +103,7 @@
       <el-dialog title="多人聊天中"
                  :close-on-click-modal="false"
                  :close-on-press-escape="false"
-                 :show-close="true"
+                 :show-close="false"
                  :visible.sync="dialogManyToManyVisible" >
           <ManyToManyVideoFrame :socket="socket" v-if="dialogManyToManyVisible" :userInfo="userInfo" :isCreateOffer="isCreateOffer" :groupUserList="groupUserList" :chatTarget="chatTarget"   ref="dialogManyToManyVisibleRef"></ManyToManyVideoFrame>
           <span slot="footer" class="dialog-footer">

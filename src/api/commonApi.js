@@ -59,3 +59,13 @@ export function acceptFriendsApply(data) {
         params: data
     })
 }
+
+
+//获取群成员信息
+export function loadGroupUserInfo(data) {
+    return request({
+        url:'/loadGroupUserInfo',
+        method: 'get',
+        params: data
+    })
+}

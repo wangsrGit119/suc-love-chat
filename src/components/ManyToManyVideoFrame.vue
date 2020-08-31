@@ -250,7 +250,7 @@
     .ManyToManyVideo{
         display: flow;
         width: 700px;
-        background-color: black;
+        background-color: rgba(201, 161, 169, 0.44);
     }
     .ManyToManyVideo video{
         object-fit:fill;
