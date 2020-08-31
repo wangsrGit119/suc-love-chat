@@ -100,7 +100,7 @@
         </span>
       </el-dialog>
       <!-- 视频通话框多对多-->
-      <el-dialog title="多人聊天中"
+      <el-dialog title="群通话中"
                  :close-on-click-modal="false"
                  :close-on-press-escape="false"
                  :show-close="false"
