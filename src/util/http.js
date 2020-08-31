@@ -17,11 +17,11 @@ const service = axios.create({
 // request拦截器
 service.interceptors.request.use(
     config => {
-        console.log("store.state.userInfo =>",store.state.userInfo)
-        // if(token){
-        //     console.log(token)
-        //     config.headers["Authorization"] = token;
-        // }
+        let hasToken = window.sessionStorage.getItem("sucToken")
+        // console.log("hasToken =>",hasToken);
+        if(hasToken){
+            config.headers["Authorization"] = hasToken;
+        }
         return config
     },
     error => {
