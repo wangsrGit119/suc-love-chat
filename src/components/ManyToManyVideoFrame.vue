@@ -1,7 +1,8 @@
 <template>
-    <div class="Single1V1Video">
-        <video id="local" muted controls="controls"> </video>
-        <video id="remote" controls="controls"> </video>
+    <div>
+        <div class="ManyToManyVideo" id="ManyToManyVideo">
+            <video id="local" muted controls="controls"> </video>
+        </div>
     </div>
 </template>
 
@@ -12,18 +13,16 @@
         window.mozRTCPeerConnection ||
         window.webkitRTCPeerConnection;
     export default {
-    name: "Single1V1VideoFrame",
-    props:['socket','userInfo','chatTarget'],
+    name: "ManyToManyVideoFrame",
+    props:['socket','userInfo','chatTarget','groupUserList','isCreateOffer'],
     data(){
         return{
             localStream:'',//本地视频流
-            remoteStream:null,
-            localPeer:'',
+            userPeerList:[],//用户peer列表
             offerOption: {
                 offerToReceiveAudio: 1,
                 offerToReceiveVideo: 1
             },
-            remoteAccount:'',
             iceServers:{
                 iceServers: [
                     { url: "stun:stun.l.google.com:19302"}, // 谷歌的公共服务
@@ -35,8 +34,6 @@
                 ],
                 sdpSemantics:'plan-b'
             },
-            pc:'',
-
         }
     },
     created() {
@@ -48,10 +45,27 @@
     },
     methods:{
         async init() {
-            await this.createNative();
-            await this.nativeMedia();
-            await this.initPeer();
-            await this.onListener();
+            const that = this;
+            await that.createNative();
+            await that.nativeMedia();
+            await that.initPeerList();
+            await that.onListener();
+            if(that.isCreateOffer){
+               await that.onCreateOffer();
+            }
+        },
+        async initPeerList(){
+            const that = this;
+            that.userPeerList = [];
+            let localUsername = that.userInfo.username;
+            console.log("groupUserList->",that.groupUserList);
+            that.groupUserList.forEach(ele=>{
+                if(that.userInfo.username !== ele.username){
+                    let peerName = localUsername+"-"+ele.username;
+                    that.initPeer(peerName,ele);
+                }
+            });
+            console.log(that.userPeerList)
         },
         //创建本地流全局放置
         async createNative() {
@@ -87,14 +101,32 @@
                 await navigator.mediaDevices.getUserMedia({audio: true, video: true})
                     .then(function (mediaStream) {
                     console.log("mediaStream",mediaStream)
-                        // //eslint-disable-next-line no-debugger
-                        // debugger
                     streamTep = mediaStream;
                 }).catch(error=>{
                     console.log("获取媒体设备异常",error)
                     that.$message.warning("获取媒体设备异常")
                 })
             return streamTep;
+        },
+        //追加视频
+        createEleVideo(stream,id){
+            console.log("createEleVideo",stream);
+            let ele = document.getElementById("ManyToManyVideo");
+            let old = document.getElementById(id);
+
+            if(old){
+                old.srcObject = stream;
+            }else{
+                let video = document.createElement('video');
+                video.controls = true;
+                video.autoplay = true;
+                video.width = 230;
+                video.height = 200;
+                video.volume = 0.1;
+                video.id = id;
+                video.srcObject = stream;
+                ele.append(video);
+            }
         },
         //关闭本地画面
         closeNativeVideo(){
@@ -104,34 +136,32 @@
         //挂断
         hangUp(){
             this.closeNativeVideo();
-            if(this.localPeer){
-                this.localPeer.close();
-            }
+        },
+        //移除视频
+        removeEleVideo(eleId){
+            document.getElementById("ManyToManyVideo").removeChild(document.getElementById(eleId));
         },
         //初始化 PeerConnection
-        initPeer(){
+        initPeer(peerName,e){
             const that = this;
-            that.pc = new PeerConnection(that.iceServers);
-            that.pc.addStream(that.localStream);
-            that.pc.onicecandidate = function(event) {
+            console.log(peerName+"初始化PeerConnection")
+            let peer_tep = new PeerConnection(this.iceServers);
+            peer_tep.addStream(that.localStream);
+            peer_tep.onicecandidate = function(event) {
                 console.log("监听ice候选信息",event.candidate)
                 if (event.candidate) {
                     let candidate_data = {userId:that.userInfo.userId,username:that.userInfo.username,candidate:event.candidate}
-                    let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:that.chatTarget.type,data:candidate_data}
+                    let params = {userId:that.userInfo.userId,targetId:e.userId,targetName:e.username,targetType:2,data:candidate_data}
                     that.socket.emit("candidate",params)
                 }else{
                     console.log("ICE收集已经完成")
                 }
             };
-            that.pc.onaddstream = (event) => {
-                console.log("监听到视频加入 onaddstream",event)
-                let video = document.querySelector('#remote');
-                video.srcObject = event.stream;
-                // eslint-disable-next-line no-unused-vars
-                video.onloadedmetadata = function(e) {
-                    video.play();
-                };
+            peer_tep.onaddstream = (event) => {
+                console.log("监听到视频加入 加入用户 ",e.username)
+                that.createEleVideo(event.stream,e.username)
             };
+            that.userPeerList[peerName] = peer_tep;
         },
         //监听服务器信息
         onListener(){
@@ -139,10 +169,6 @@
             that.socket.on("candidate",function (e) {
                 console.log("服务器发送 candidate",e)
                 that.onIceCandidate(e)
-            })
-            that.socket.on("join",function (e) {
-                console.log("服务器发送 join",e)
-                that.onJoin(e)
             })
             that.socket.on("offer",function (e) {
                 console.log("服务器发送 offer",e)
@@ -152,20 +178,32 @@
                 console.log("服务器发送 answer",e)
                 that.onAnswer(e)
             })
+            that.socket.on("onJoinRoom",function (e) {
+                console.log("服务器发送 onJoinRoom",e)
+                that.$message.info("用户"+e.data.username+""+e.data.info)
+                that.initPeerList();
+            })
+            that.socket.on("onLeftRoom",function (e) {
+                console.log("服务器发送 onLeftRoom",e)
+                that.$message.warning("用户"+e.data.username+"离开房间");
+                that.removeEleVideo(e.data.username)
+            })
         },
         //监听 Ice 候选
         async onIceCandidate(data) {
             const that = this;
-            await that.pc.addIceCandidate(data.data.candidate)
+            let peerName = that.userInfo.username+"-"+data.data.username;
+            await that.userPeerList[peerName].addIceCandidate(data.data.candidate)
         },
         //监听远端offer
         async onOffer(data) {
             const that = this;
-            await that.pc.setRemoteDescription(data.data.offer)
+            let peerName = that.userInfo.username+"-"+data.data.username;
+            await that.userPeerList[peerName].setRemoteDescription(data.data.offer)
             // 接收端创建 answer
-            let answer = await that.pc.createAnswer();
+            let answer = await that.userPeerList[peerName].createAnswer();
             // 接收端设置本地 answer 描述
-            await that.pc.setLocalDescription(answer);
+            await that.userPeerList[peerName].setLocalDescription(answer);
             //发送到呼叫端 answer
             let answer_data = {userId:that.userInfo.userId,username:that.userInfo.username,answer:answer}
             let params = {userId:that.userInfo.userId,targetId:data.data.userId,targetName:data.data.username,targetType:data.targetType,data:answer_data}
@@ -174,21 +212,27 @@
         //监听远程响应
         async onAnswer(data) {
             const that = this;
+            let peerName = that.userInfo.username+"-"+data.data.username;
             // 发送端 设置远程 answer 描述
-            await that.pc.setRemoteDescription(data.data.answer);
+            await that.userPeerList[peerName].setRemoteDescription(data.data.answer);
         },
         //创建连接
         async onCreateOffer() {
             const that = this;
-            //创建offer
-            let offer = await that.pc.createOffer(this.offerOption);
-            console.log("呼叫端 创建 offer",offer)
-            //设置本地描述
-            await that.pc.setLocalDescription(offer)
-            //远程发送到服务器
-            let data = {offer:offer,userId:that.userInfo.userId,username:that.userInfo.username,info:"发送offer"}
-            let params = {userId:that.userInfo.userId,targetId:that.chatTarget.userId,targetName:that.chatTarget.chatName,targetType:that.chatTarget.type,data:data}
-            that.socket.emit("offer",params)
+            console.log("开始创建offer")
+            for(const ele of that.groupUserList){
+                let peerName = that.userInfo.username+"-"+ele.username;
+                if(that.userInfo.username !== ele.username){
+                    //创建offer
+                    let offer = await that.userPeerList[peerName].createOffer(that.offerOption);
+                    //设置本地描述
+                    await that.userPeerList[peerName].setLocalDescription(offer)
+                    //远程发送到服务器 并转发到其他的客户端
+                    let data = {offer:offer,userId:that.userInfo.userId,username:that.userInfo.username,info:"发送offer"}
+                    let params = {userId:that.userInfo.userId,targetId:ele.userId,targetName:ele.username,targetType:2,data:data}
+                    that.socket.emit("offer",params)
+                }
+            }
         },
 
     },
@@ -202,13 +246,15 @@
 </script>
 
 <style scoped>
-    .Single1V1Video{
+
+    .ManyToManyVideo{
         display: flow;
+        width: 700px;
         background-color: black;
     }
-    .Single1V1Video video{
+    .ManyToManyVideo video{
         object-fit:fill;
-        width: 320px;
+        width: 230px;
         height: 200px;
     }
 

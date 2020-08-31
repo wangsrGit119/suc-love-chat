@@ -33,11 +33,11 @@
                     </div>
                 </el-col>
             </el-row>
-            <div class="chatObject"  v-for="(item,index) in chatList" :style="chatObjectCSS['obj'+item.userId+''+item.type+'obj']" :key="index" @click="chooseChat(item)">
+            <div class="chatObject"  v-for="(item,index) in chatList" :id="'obj'+item.userId+''+item.type+'obj'" :style="chatObjectCSS['obj'+item.userId+''+item.type+'obj']" :key="index" @click="chooseChat(item)">
                <div >
                    <el-avatar shape="square" size="small" :src="item.avatarUrl"></el-avatar>
                </div>
-                <div  class="chatObjectNameLabel" :ref="'obj'+item.userId+''+item.type+'obj'">
+                <div  class="chatObjectNameLabel" >
                     <label >{{item.chatName}}</label>
                 </div>
             </div>
@@ -95,8 +95,19 @@
                  :visible.sync="dialogSingle1V1Visible" >
           <Single1V1VideoFrame :socket="socket" v-if="dialogSingle1V1Visible" :userInfo="userInfo" :chatTarget="chatTarget"   ref="dialogSingle1V1VisibleRef"></Single1V1VideoFrame>
           <span slot="footer" class="dialog-footer">
-              <el-button type="primary" @click="closeNativeVideo">关闭本地画面</el-button>
+<!--              <el-button type="primary" @click="closeNativeVideo">关闭本地画面</el-button>-->
                 <el-button type="primary" @click="hangUp">挂断</el-button>
+        </span>
+      </el-dialog>
+      <!-- 视频通话框多对多-->
+      <el-dialog title="多人聊天中"
+                 :close-on-click-modal="false"
+                 :close-on-press-escape="false"
+                 :show-close="true"
+                 :visible.sync="dialogManyToManyVisible" >
+          <ManyToManyVideoFrame :socket="socket" v-if="dialogManyToManyVisible" :userInfo="userInfo" :isCreateOffer="isCreateOffer" :groupUserList="groupUserList" :chatTarget="chatTarget"   ref="dialogManyToManyVisibleRef"></ManyToManyVideoFrame>
+          <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="hangUp02()">离开</el-button>
         </span>
       </el-dialog>
     <!--搜索结果框-->
@@ -126,7 +137,8 @@ import io from 'socket.io-client';
 import Single1V1VideoFrame from "../components/Single1V1VideoFrame";
 import UserList from "../components/UserList";
 import FriendsUserList from "../components/FriendsUserList";
-import {loadReceivingFriends, loadUserFriendsPage,loadMessages} from '../api/commonApi'
+import ManyToManyVideoFrame from "../components/ManyToManyVideoFrame";
+import {loadReceivingFriends, loadUserFriendsPage,loadMessages,loadGroupUserInfo} from '../api/commonApi'
 import {socketBaseUrl} from "../util/http";
 
 export default {
@@ -134,7 +146,8 @@ export default {
   components: {
       Single1V1VideoFrame,
       UserList,
-      FriendsUserList
+      FriendsUserList,
+      ManyToManyVideoFrame
   },
   data(){
       return{
@@ -147,12 +160,15 @@ export default {
           chatHistoryList:[],//历史聊天记录
           messageForNew:'',//新消息发送
           imageUrl:'',//图片url
-          dialogSingle1V1Visible:false,//视频聊天对话框
+          dialogSingle1V1Visible:false,//1v1视频聊天对话框
+          dialogManyToManyVisible:false,//群视频聊天对话框
           dialogUserList:false,//用户搜索结果
           dialogFriendsUserList:false,//待处理好友申请
           userInfo: JSON.parse(window.sessionStorage.getItem("userInfo")),
           chatObjectCSS:[],//动态css样式集合（每个聊天目标）
           newFriendsNum:0,//好友申请数量
+          groupUserList:[],//群用户列表
+          isCreateOffer:false,//子组件是否创建offer判断
       }
   },
   created() {
@@ -229,10 +245,28 @@ export default {
       },
       //选择聊天对象
       chooseChat(item){
+          const that = this;
           console.log(item)
           this.isInit = false;
-          this.chatTarget = item;
-          this.loadMessages(item);
+          that.chatTarget = item;
+          //加载聊天记录
+          that.loadMessages(item);
+          //加载群成员信息
+          if(item.type === 2){
+            that.loadGroupUserInfo(item.userId);
+          }
+      },
+      //加载群成员信息
+      loadGroupUserInfo(groupId){
+          const that = this;
+          loadGroupUserInfo({groupId:groupId}).then(res=>{
+              if(res.code===200){
+                  that.groupUserList = [];
+                  that.groupUserList = res.data;
+              }
+          }).catch(error=>{
+              console.log("loadGroupUserInfo error ",error)
+          })
       },
       //加载历史聊天记录
       loadMessages(row){
@@ -266,7 +300,7 @@ export default {
                   return;
               }
           }
-          let message = {username:this.userInfo.username,imageUrl:'',createTime:'2020-08-15 20:23:04',avatarUrl:this.userInfo.avatarUrl,message:this.messageForNew}
+          let message = {username:this.userInfo.username,nickname:this.userInfo.nickname,imageUrl:'',createTime:this.formatDate(new Date()),avatarUrl:this.userInfo.avatarUrl,message:this.messageForNew}
           message.imageUrl = this.imageUrl
           this.chatHistoryList.push(message)
           let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:message}
@@ -274,26 +308,70 @@ export default {
           this.messageForNew = ''
           this.imageUrl = ''
       },
+      formatDate(inputTime) {
+          var date = new Date(inputTime);
+          var y = date.getFullYear();
+          var m = date.getMonth() + 1;
+          m = m < 10 ? ('0' + m) : m;
+          var d = date.getDate();
+          d = d < 10 ? ('0' + d) : d;
+          var h = date.getHours();
+          h = h < 10 ? ('0' + h) : h;
+          var minute = date.getMinutes();
+          var second = date.getSeconds();
+          minute = minute < 10 ? ('0' + minute) : minute;
+          second = second < 10 ? ('0' + second) : second;
+          return y + '-' + m + '-' + d+' '+h+':'+minute+':'+second;
+      },
       //监听正在输入
       changeValue(){
           console.log('正在输入')
       },
       //视频聊天
       videoWithPartner(){
-          this.dialogSingle1V1Visible = true;
-          let data = {type:1,info:"呼叫",userId:this.userInfo.userId,username:this.userInfo.username}
-          let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
-          this.socket.emit("1V1CommunicateVideo",params)
+          //单人
+          if(this.chatTarget.type===1){
+              this.dialogSingle1V1Visible = true;
+              let data = {type:1,info:"呼叫",userId:this.userInfo.userId,username:this.userInfo.username}
+              let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
+              this.socket.emit("1V1CommunicateVideo",params)
+              //群聊
+          }else {
+              this.dialogManyToManyVisible = true;
+              let data = {type:1,info:"呼叫",userId:this.userInfo.userId,username:this.userInfo.username,groupInfo:this.chatTarget}
+              this.groupUserList.forEach(ele=>{
+                  if(this.userInfo.username !== ele.username){
+                      let params = {userId:this.userInfo.userId,targetId:ele.userId,targetName:ele.username,targetType:2,data:data}
+                      this.socket.emit("ManyToManyCommunicateVideo",params)
+                  }
+              })
+
+          }
+
       },
       closeNativeVideo(){
           this.$refs['dialogSingle1V1VisibleRef'].closeNativeVideo()
       },
+      //1v1
       hangUp(){
           let data = {type:3,info:"挂断",username:this.userInfo.username}
           let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
           this.socket.emit("1V1CommunicateVideo",params)
           this.dialogSingle1V1Visible = false;
           this.$refs['dialogSingle1V1VisibleRef'].hangUp()
+          this.$router.go(0)
+      },
+      //manyToMany
+      hangUp02(){
+          let data = {type:4,info:"离开房间",username:this.userInfo.username};
+          this.groupUserList.forEach(ele => {
+              if(this.userInfo.username !== ele.username){
+                  let params = {userId:this.userInfo.userId,targetId:ele.userId,targetName:ele.username,targetType:this.chatTarget.type,data:data};
+                  this.socket.emit("onLeftRoom",params);
+              }
+          });
+          this.$refs['dialogManyToManyVisibleRef'].hangUp();
+          this.dialogSingle1V1Visible = false;
           this.$router.go(0)
       },
       //注销登录
@@ -410,6 +488,54 @@ export default {
           });
           that.socket.on("notOnline",function (e) {
               that.$message.error(e)
+          });
+          //群聊监听
+          that.socket.on("ManyToManyCommunicateVideo",function (e) {
+              //呼叫
+              if(e.data.type===1){
+                  that.$confirm('用户'+e.data.username+' 邀请你加入群聊，是否加入?', '提示', {
+                      closeOnClickModal:false,
+                      closeOnPressEscape:false,
+                      confirmButtonText: '确定',
+                      cancelButtonText: '取消',
+                      type: 'warning'
+                  }).then(() => {
+                      let id = 'obj'+e.data.groupInfo.userId+""+e.data.groupInfo.type+'obj';
+                      console.log("id",id);
+                      document.getElementById(id.toString()).click();
+                      let data = {type:2,info:"加入群聊",username:that.userInfo.username};
+                      const loading = that.$loading({
+                          lock: true,
+                          text: '正在加入群聊请稍后',
+                          spinner: 'el-icon-loading',
+                          background: 'rgba(0, 0, 0, 0.7)'
+                      });
+                      setTimeout(function () {
+                          console.log("that.groupUserList ->",that.groupUserList)
+                          if(that.groupUserList.length===0){
+                              that.$message.error("群用户列表加载失败")
+                              return;
+                          }
+                        that.groupUserList.forEach(ele =>{
+                          if(that.userInfo.username !== ele.username){
+                            let params = {userId:that.userInfo.userId,targetId:ele.userId,targetName:ele.username,targetType:e.targetType,data:data}
+                            that.socket.emit("onJoinRoom",params);
+                          }
+                        });
+                      },2000);
+                      setTimeout(function () {
+                          loading.close();
+                          //接通后创建offer
+                          that.isCreateOffer = true;
+                          that.dialogManyToManyVisible = true;
+
+                      },2000)
+                  }).catch(() => {
+                      let data = {type:3,info:"拒接",username:that.userInfo.username}
+                      let params = {userId:that.userInfo.userId,targetId:e.data.userId,targetName:e.data.username,targetType:e.targetType,data:data}
+                      that.socket.emit("ManyToManyCommunicateVideo",params)
+                  });
+              }
           })
       },
       changeCss(params){
