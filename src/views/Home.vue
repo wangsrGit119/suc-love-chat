@@ -44,7 +44,7 @@
         </el-aside>
         <el-container v-if="!isInit">
         <!-- 聊天记录展示-->
-          <el-header height="50px">{{chatTarget.chatName}}</el-header>
+          <el-header height="50px">{{chatTarget.chatName}}  {{chatTarget.type === 2?'群聊':'用户'}}</el-header>
           <el-main >
               <div class="chatContentDiv"  v-for="item in chatHistoryList" :key="item.id" :style="{justifyContent: item.username === myUsername? 'flex-end':'flex-start'}">
                   <div  class="chatObjectAvatar" v-if="item.username !== myUsername">
