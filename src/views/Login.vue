@@ -27,9 +27,6 @@
                <el-form-item label="密码" prop="password">
                    <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
                </el-form-item>
-               <el-form-item label="确认密码" prop="checkPass">
-                   <el-input type="password" v-model="ruleForm.checkPass"></el-input>
-               </el-form-item>
                <el-form-item>
                    <el-button type="primary" @click="onLogin('ruleForm')">提交</el-button>
                    <el-button @click="resetForm('ruleForm')">重置</el-button>
@@ -55,18 +52,6 @@ export default {
             if (value === '') {
                 callback(new Error('请输入密码'));
             } else {
-                if (this.ruleForm.checkPass !== '') {
-                    this.$refs.ruleForm.validateField('checkPass');
-                }
-                callback();
-            }
-        };
-        var validatePass2 = (rule, value, callback) => {
-            if (value === '') {
-                callback(new Error('请再次输入密码'));
-            } else if (value !== this.ruleForm.password) {
-                callback(new Error('两次输入密码不一致!'));
-            } else {
                 callback();
             }
         };
@@ -74,7 +59,6 @@ export default {
             ruleForm: {
                 username: '',
                 password:'',
-                checkPass: '',
             },
             topForLoginForm: 300,
             leftForLoginForm: 200,
@@ -84,9 +68,6 @@ export default {
                 ],
                 password: [
                     { validator: validatePass, trigger: 'blur' }
-                ],
-                checkPass: [
-                    { validator: validatePass2, trigger: 'blur' }
                 ]
             }
         };
