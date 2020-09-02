@@ -89,6 +89,10 @@ export default {
         async onLogin(formName) {
             const that = this;
             console.log(formName)
+            if(this.ruleForm.username==='' || this.ruleForm.password===''){
+                this.$message.error("请输入用户名或密码")
+                return ;
+            }
             let params = {username:this.ruleForm.username,password:this.ruleForm.password};
             login(params).then(res=>{
                 console.log('res',res)
