@@ -116,7 +116,6 @@
                     that.pc.addStream(mediaStream)
                     that.onCreateOffer();
                     let video = document.querySelector('#local');
-                    // 旧的浏览器可能没有srcObject
                     if ("srcObject" in video) {
                         video.srcObject = that.shareStream;
                     } else {
