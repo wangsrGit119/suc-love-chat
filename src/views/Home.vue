@@ -475,7 +475,7 @@ export default {
                   //接通后创建offer
                   setTimeout(function () {
                       that.$refs['dialogSingle1V1VisibleRef'].onCreateOffer();
-                  },5000)
+                  },2000)
                   //拒接和挂断通知
               }else if(e.data.type===3){
                   that.$message({

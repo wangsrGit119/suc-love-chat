@@ -2,6 +2,10 @@
     <div class="Single1V1Video">
         <video id="local" muted controls="controls"> </video>
         <video id="remote" controls="controls"> </video>
+        <div v-if="isCreateOfferOwner">
+            <el-button type="primary" @click="shareScreenStream" round v-if="isLocalStream">分享屏幕</el-button>
+            <el-button type="primary" @click="changeLocalStream" round v-if="!isLocalStream">切回主画面</el-button>
+        </div>
     </div>
 </template>
 
@@ -18,7 +22,8 @@
         return{
             localStream:'',//本地视频流
             remoteStream:null,
-            localPeer:'',
+            isLocalStream:true,
+            isCreateOfferOwner:false,
             offerOption: {
                 offerToReceiveAudio: 1,
                 offerToReceiveVideo: 1
@@ -87,14 +92,60 @@
                 await navigator.mediaDevices.getUserMedia({audio: true, video: true})
                     .then(function (mediaStream) {
                     console.log("mediaStream",mediaStream)
-                        // //eslint-disable-next-line no-debugger
-                        // debugger
                     streamTep = mediaStream;
                 }).catch(error=>{
                     console.log("获取媒体设备异常",error)
                     that.$message.warning("获取媒体设备异常")
                 })
             return streamTep;
+        },
+        //分享屏幕
+        shareScreenStream(){
+            const that = this;
+            const displayMediaStreamConstraints = {
+                video: {
+                    cursor: "always"
+                },
+                audio: true
+            };
+            if (navigator.mediaDevices.getDisplayMedia) {
+                navigator.mediaDevices.getDisplayMedia(displayMediaStreamConstraints).then(function (mediaStream) {
+                    console.log("mediaStream", mediaStream)
+                    that.shareStream = mediaStream;
+                    that.pc.removeStream(that.localStream)
+                    that.pc.addStream(mediaStream)
+                    that.onCreateOffer();
+                    let video = document.querySelector('#local');
+                    // 旧的浏览器可能没有srcObject
+                    if ("srcObject" in video) {
+                        video.srcObject = that.shareStream;
+                    } else {
+                        video.src = window.URL.createObjectURL(that.shareStream);
+                        video.volume = 0
+                    }
+                    // eslint-disable-next-line no-unused-vars
+                    video.onloadedmetadata = function(e) {
+                        video.play();
+                    };
+                    that.isLocalStream = false;
+                }).catch(error=>{
+                    console.log("error",error)
+                    that.$message.error("媒体设备获取异常，请检查设备或浏览器是否支持")
+                });
+            } else {
+                console.log("navigator.mediaDevices.getDisplayMedia  false");
+                that.$message.error("浏览器不不支持")
+                // navigator.getDisplayMedia(displayMediaStreamConstraints).then(success).catch(error);
+            }
+        },
+        //切回本地摄像头
+        changeLocalStream(){
+            const that = this;
+            that.pc.removeStream(that.shareStream)
+            that.pc.addStream(that.localStream)
+            that.onCreateOffer();
+            that.nativeMedia();
+            that.isLocalStream = true;
         },
         //关闭本地画面
         closeNativeVideo(){
@@ -104,8 +155,8 @@
         //挂断
         hangUp(){
             this.closeNativeVideo();
-            if(this.localPeer){
-                this.localPeer.close();
+            if(this.pc){
+                this.pc.close();
             }
         },
         //初始化 PeerConnection
@@ -180,6 +231,7 @@
         //创建连接
         async onCreateOffer() {
             const that = this;
+            that.isCreateOfferOwner = true;
             //创建offer
             let offer = await that.pc.createOffer(this.offerOption);
             console.log("呼叫端 创建 offer",offer)
