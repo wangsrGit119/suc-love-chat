@@ -2,8 +2,8 @@ import axios from "axios"
 import router from "../router"
 import { Message } from "element-ui"
 
-export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web/" : "https://webrtc.qdhuazhiyao.cn/suc-web"
-export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/" : "wss://webrtc.qdhuazhiyao.cn/"
+export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web/" : ""
+export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/" : ""
 
 axios.defaults.withCredentials = true
 // 创建axios实例
