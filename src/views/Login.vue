@@ -39,7 +39,7 @@
 <script>
 
 import {login} from '@/api/commonApi'
-
+import {L2Dwidget} from 'live2d-widget'
 export default {
     name: "Login",
     data(){
@@ -74,7 +74,13 @@ export default {
 
     },
     created() {
-
+        setTimeout(function () {
+            L2Dwidget.init({
+                model: {
+                    jsonPath: 'https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/L2Dwidget/live2d-widget-model-izumi/assets/izumi.model.json',
+                }
+            });
+        },1000);
     },
     mounted() {
         console.log(window.innerWidth,window.innerHeight)

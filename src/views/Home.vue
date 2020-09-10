@@ -140,6 +140,7 @@ import FriendsUserList from "../components/FriendsUserList";
 import ManyToManyVideoFrame from "../components/ManyToManyVideoFrame";
 import {loadReceivingFriends, loadUserFriendsPage,loadMessages,loadGroupUserInfo} from '../api/commonApi'
 import {socketBaseUrl} from "../util/http";
+import {L2Dwidget} from 'live2d-widget'
 
 export default {
   name: 'Home',
@@ -189,6 +190,13 @@ export default {
       // this.chatHistoryList.push(bb)
       // this.chatHistoryList.push(cc)
       // this.chatHistoryList.push(bb2)
+      setTimeout(function () {
+          L2Dwidget.init({
+              model: {
+                  jsonPath: 'https://cdn.jsdelivr.net/gh/wangsrGit119/wangsr-image-bucket/L2Dwidget/live2d-widget-model-tsumiki/assets/tsumiki.model.json',
+              }
+          });
+      },1000);
     },
   mounted() {
 

@@ -11,6 +11,7 @@
     "axios": "^0.19.2",
     "core-js": "^3.6.5",
     "element-ui": "^2.13.2",
+    "live2d-widget": "^3.1.4",
     "socket.io-client": "^2.3.0",
     "vue": "^2.6.11",
     "vue-particles": "^1.0.9",
