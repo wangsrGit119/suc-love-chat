@@ -2,8 +2,8 @@ import axios from "axios"
 import router from "../router"
 import { Message } from "element-ui"
 
-export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web/" : ""
-export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/" : ""
+export const baseurl = process.env.NODE_ENV === "production" ? "/suc-web/" : "http://127.0.0.1:8006"
+export const socketBaseUrl = process.env.NODE_ENV === "production" ? "/" : "ws://127.0.0.1:9091"
 
 axios.defaults.withCredentials = true
 // 创建axios实例
