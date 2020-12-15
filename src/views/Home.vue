@@ -17,7 +17,7 @@
        <!--  聊天对象展示-->
         <el-aside class="el-aside02" width="10vw">
             <el-row>
-                <el-col :span="20">
+                <el-col :span="18">
                     <el-input
                             width="70px"
                             maxlength="10"
@@ -27,9 +27,14 @@
                             prefix-icon="el-icon-search">
                     </el-input>
                 </el-col>
-                <el-col :span="4">
-                    <div style="text-align: center;margin-top: 9px">
-                        <i class="el-icon-circle-plus-outline"></i>
+                <el-col :span="5">
+                    <div style="text-align: center;">
+                        <!-- <i class="el-icon-circle-plus-outline"></i> -->
+                        <el-button
+                            icon="el-icon-circle-plus-outline"
+                            size="small"
+                            @click="friendsDialogShow">
+                        </el-button>
                     </div>
                 </el-col>
             </el-row>
@@ -128,6 +133,15 @@
           <FriendsUserList v-if="dialogFriendsUserList" :socket="socket"  ref="dialogFriendsUserListRef"></FriendsUserList>
       </el-dialog>
 
+      <!--创建群组框-->
+      <el-dialog title="邀请好友创建群聊"
+                 :close-on-click-modal="false"
+                 :close-on-press-escape="false"
+                 :show-close="true"
+                 :visible.sync="dialogCreateGroup" >
+          <GroupFriendsList v-if="dialogCreateGroup" @friendsDialogHide="friendsDialogHide"   ref="dialogCreateGroupRef"></GroupFriendsList>
+      </el-dialog>
+
   </div>
 
 </template>
@@ -141,6 +155,7 @@ import ManyToManyVideoFrame from "../components/ManyToManyVideoFrame";
 import {loadReceivingFriends, loadUserFriendsPage,loadMessages,loadGroupUserInfo} from '../api/commonApi'
 import {socketBaseUrl} from "../util/http";
 import {L2Dwidget} from 'live2d-widget'
+import GroupFriendsList from "../components/GroupFriendsList";
 
 export default {
   name: 'Home',
@@ -148,7 +163,8 @@ export default {
       Single1V1VideoFrame,
       UserList,
       FriendsUserList,
-      ManyToManyVideoFrame
+      ManyToManyVideoFrame,
+      GroupFriendsList
   },
   data(){
       return{
@@ -170,6 +186,7 @@ export default {
           newFriendsNum:0,//好友申请数量
           groupUserList:[],//群用户列表
           isCreateOffer:false,//子组件是否创建offer判断
+          dialogCreateGroup: false // 创建群组对话框
       }
   },
   created() {
@@ -453,6 +470,18 @@ export default {
                   that.loadCommunicationUser()
               },2000)
           });
+          that.socket.on("newGroupNotify",function (e) {
+              console.log("newGroupNotify",e)
+              that.$notify({
+                  title:'提示',
+                  message: e.message,
+                  type:'info'
+              });
+              setTimeout(function () {
+                  that.loadNewFriends();
+                  that.loadCommunicationUser()
+              },2000)
+          });
           that.socket.on("1V1CommunicateVideo",function (e) {
               console.log("1V1CommunicateVideo",e)
               //呼叫
@@ -570,6 +599,16 @@ export default {
           that.dialogFriendsUserList = false;
           that.loadCommunicationUser();
       },
+      // 显示创建群组
+      friendsDialogShow(){
+          const that = this;
+          that.dialogCreateGroup = true;
+      },
+      friendsDialogHide(){
+          const that = this;
+          that.loadCommunicationUser()
+          that.dialogCreateGroup = false;
+      }
 
     },
     watch:{
