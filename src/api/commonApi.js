@@ -8,6 +8,14 @@ export function login(data) {
     })
 }
 
+export function register(data) {
+    return request({
+        url: '/register',
+        method: 'post',
+        params: data
+    })
+}
+
 //加载消息记录
 export function loadMessages(data) {
     return request({

@@ -1,6 +1,6 @@
 <template>
 
-    <div class="UserLoginForm">
+    <div class="UserRegisterForm">
         <vue-particles
                 color="#409EFF"
                 :particleOpacity="0.7"
@@ -28,21 +28,21 @@
                    <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
                </el-form-item>
                <el-form-item>
-                   <el-button type="primary" @click="onLogin('ruleForm')">提交</el-button>
+                   <el-button type="primary" @click="onRegister('ruleForm')">注册</el-button>
                    <el-button @click="resetForm('ruleForm')">重置</el-button>
                </el-form-item>
            </el-form>
-           <router-link to="/register">没有账号？马上注册</router-link>
+           <router-link to="/login">返回登录</router-link>
        </div>
     </div>
 </template>
 
 <script>
 
-import {login} from '@/api/commonApi'
+import {register} from '@/api/commonApi'
 import {L2Dwidget} from 'live2d-widget'
 export default {
-    name: "Login",
+    name: "Register",
     data(){
         var checkUsername = (rule, value, callback) => {
             if (!value) {
@@ -93,7 +93,7 @@ export default {
     },
     methods:{
 
-        async onLogin(formName) {
+        async onRegister(formName) {
             const that = this;
             console.log(formName)
             if(this.ruleForm.username==='' || this.ruleForm.password===''){
@@ -101,23 +101,11 @@ export default {
                 return ;
             }
             let params = {username:this.ruleForm.username,password:this.ruleForm.password};
-            login(params).then(res=>{
+            register(params).then(res=>{
                 console.log('res',res)
                 if(res.code===200){
-                    window.sessionStorage.setItem("sucToken",res.data.token)
-                    window.sessionStorage.setItem("userInfo",JSON.stringify(res.data))
-                    this.$store.dispatch("commitUserInfo", res.data)
-                    const loading = this.$loading({
-                        lock: true,
-                        text: '登录中请稍后',
-                        spinner: 'el-icon-loading',
-                        background: 'rgba(0, 0, 0, 0.7)'
-                    });
-                    setTimeout(() => {
-                        loading.close();
-                        that.$router.push({path:'/'})
-                    }, 2000);
-
+                    that.$message.success(res.message)
+                    this.$router.push({path:'/login'})
                 }else {
                     that.$message.error(res.message)
                 }
@@ -126,9 +114,6 @@ export default {
         resetForm(formName) {
             this.$refs[formName].resetFields();
         },
-
-
-
     },
     watch:{
 
@@ -138,7 +123,7 @@ export default {
 </script>
 
 <style scoped>
-.UserLoginForm {
+.UserRegisterForm {
     position: fixed;
     width:100%;
     height:100vh;
@@ -147,7 +132,7 @@ export default {
     z-index:-1;
 
 }
-.UserLoginForm .top{
+.UserRegisterForm .top{
     position: fixed;
     width: 320px;
     height: 230px;

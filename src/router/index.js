@@ -18,14 +18,19 @@ Vue.use(VueRouter)
     // which is lazy-loaded when the route is visited.
     component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
   },
-    {
-      path: '/login',
-      name: 'Login',
-      // route level code-splitting
-      // this generates a separate chunk (about.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import(/* webpackChunkName: "about" */ '../views/Login.vue')
-    }
+  {
+    path: '/login',
+    name: 'Login',
+    // route level code-splitting
+    // this generates a separate chunk (about.[hash].js) for this route
+    // which is lazy-loaded when the route is visited.
+    component: () => import(/* webpackChunkName: "about" */ '../views/Login.vue')
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: () => import(/* webpackChunkName: "about" */ '../views/Register.vue')
+  }
 ]
 
 const router = new VueRouter({
@@ -33,7 +38,7 @@ const router = new VueRouter({
 })
 
 
-const whiteList = ["/login"]
+const whiteList = ["/login","/register"]
 router.beforeEach((to, from, next) => {
   // 是否有token
   let hasToken = window.sessionStorage.getItem("sucToken")
