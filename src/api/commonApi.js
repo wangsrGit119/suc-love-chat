@@ -12,7 +12,7 @@ export function register(data) {
     return request({
         url: '/register',
         method: 'post',
-        params: data
+        data: data
     })
 }
 
@@ -24,7 +24,6 @@ export function loadMessages(data) {
         params: data
     })
 }
-
 
 //通讯录加载
 export function loadUserFriendsPage(data) {
@@ -68,12 +67,38 @@ export function acceptFriendsApply(data) {
     })
 }
 
-
 //获取群成员信息
 export function loadGroupUserInfo(data) {
     return request({
         url:'/loadGroupUserInfo',
         method: 'get',
         params: data
+    })
+}
+
+// //同意群聊申请
+// export function acceptGroupApply(data) {
+//     return request({
+//         url:'/acceptGroupApply',
+//         method: 'post',
+//         data: data
+//     })
+// }
+
+// //群聊邀请
+// export function applyAddGroup(data) {
+//     return request({
+//         url:'/applyAddGroup',
+//         method: 'post',
+//         data: data
+//     })
+// }
+
+//创建群聊
+export function createGroup(data) {
+    return request({
+        url:'/createGroup',
+        method: 'post',
+        data: data
     })
 }

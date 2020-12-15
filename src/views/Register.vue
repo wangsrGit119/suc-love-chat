@@ -21,8 +21,11 @@
         ></vue-particles>
        <div class="top" :style="{'top':topForLoginForm+'px','left':leftForLoginForm+'px'}">
            <el-form :model="ruleForm" status-icon :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
-               <el-form-item label="用户名" prop="username">
+               <el-form-item label="登录名" prop="username">
                    <el-input type="input" v-model="ruleForm.username" autocomplete="off"></el-input>
+               </el-form-item>
+               <el-form-item label="昵称" prop="nickname">
+                   <el-input type="input" v-model="ruleForm.nickname" autocomplete="off"></el-input>
                </el-form-item>
                <el-form-item label="密码" prop="password">
                    <el-input type="password" v-model="ruleForm.password" autocomplete="off"></el-input>
@@ -49,6 +52,11 @@ export default {
                 return callback(new Error('用户名不能为空'));
             }
         };
+        var checkNickname = (rule, value, callback) => {
+            if (!value) {
+                return callback(new Error('昵称不能为空'));
+            }
+        };
         var validatePass = (rule, value, callback) => {
             if (value === '') {
                 callback(new Error('请输入密码'));
@@ -60,12 +68,16 @@ export default {
             ruleForm: {
                 username: '',
                 password:'',
+                nickname:''
             },
             topForLoginForm: 300,
             leftForLoginForm: 200,
             rules: {
                 username: [
                     { validator: checkUsername, trigger: 'blur' }
+                ],
+                nickname: [
+                    { validator: checkNickname, trigger: 'blur' }
                 ],
                 password: [
                     { validator: validatePass, trigger: 'blur' }
@@ -100,7 +112,7 @@ export default {
                 this.$message.error("请输入用户名或密码")
                 return ;
             }
-            let params = {username:this.ruleForm.username,password:this.ruleForm.password};
+            let params = {username:this.ruleForm.username,password:this.ruleForm.password,nickname:this.ruleForm.nickname};
             register(params).then(res=>{
                 console.log('res',res)
                 if(res.code===200){
@@ -135,7 +147,7 @@ export default {
 .UserRegisterForm .top{
     position: fixed;
     width: 320px;
-    height: 230px;
+    height: 280px;
     padding-top: 20px;
     padding-right: 70px;
     border: 1px red solid;
