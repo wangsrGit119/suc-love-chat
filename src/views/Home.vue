@@ -83,7 +83,7 @@
                   </el-upload>
                   <i class="el-icon-video-camera" title="视频通话" @click="videoWithPartner"></i>
                   <i class="el-icon-upload" title="发送文件"></i>
-                  <i class="el-icon-phone-outline" title="语音电话"></i>
+                  <i class="el-icon-phone-outline" title="语音电话" @click="phoneWithPartner"></i>
               </div>
               <div class="chatMessageSend">
                   <el-input  type="input" v-model="messageForNew"   @input="changeValue"  @keyup.enter.native="sendMessageToTarget"></el-input>
@@ -102,6 +102,18 @@
           <span slot="footer" class="dialog-footer">
 <!--              <el-button type="primary" @click="closeNativeVideo">关闭本地画面</el-button>-->
                 <el-button type="primary" @click="hangUp">挂断</el-button>
+        </span>
+      </el-dialog>
+      
+      <!-- 语音通话框1V1-->
+      <el-dialog title="语音通话中"
+                 :close-on-click-modal="false"
+                 :close-on-press-escape="false"
+                 :show-close="false"
+                 :visible.sync="dialogSingle1V1Phone" >
+          <Single1V1PhoneFrame :socket="socket" v-if="dialogSingle1V1Phone" :userInfo="userInfo" :chatTarget="chatTarget"   ref="dialogSingle1V1PhoneRef"></Single1V1PhoneFrame>
+          <span slot="footer" class="dialog-footer">
+                <el-button type="primary" @click="hangUpPhone()">挂断</el-button>
         </span>
       </el-dialog>
       <!-- 视频通话框多对多-->
@@ -149,6 +161,7 @@
 <script>
 import io from 'socket.io-client';
 import Single1V1VideoFrame from "../components/Single1V1VideoFrame";
+import Single1V1PhoneFrame from "../components/Single1V1PhoneFrame";
 import UserList from "../components/UserList";
 import FriendsUserList from "../components/FriendsUserList";
 import ManyToManyVideoFrame from "../components/ManyToManyVideoFrame";
@@ -161,6 +174,7 @@ export default {
   name: 'Home',
   components: {
       Single1V1VideoFrame,
+      Single1V1PhoneFrame,
       UserList,
       FriendsUserList,
       ManyToManyVideoFrame,
@@ -186,7 +200,8 @@ export default {
           newFriendsNum:0,//好友申请数量
           groupUserList:[],//群用户列表
           isCreateOffer:false,//子组件是否创建offer判断
-          dialogCreateGroup: false // 创建群组对话框
+          dialogCreateGroup: false, // 创建群组对话框
+          dialogSingle1V1Phone: false //1v1语音通话对话框
       }
   },
   created() {
@@ -374,6 +389,14 @@ export default {
           }
 
       },
+      phoneWithPartner(){
+        //单人通话
+        this.dialogSingle1V1Phone = true;
+        let data = {type:1,info:"呼叫",userId:this.userInfo.userId,username:this.userInfo.username}
+        let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
+        this.socket.emit("1V1CommunicatePhone",params)
+      },
+
       closeNativeVideo(){
           this.$refs['dialogSingle1V1VisibleRef'].closeNativeVideo()
       },
@@ -384,6 +407,15 @@ export default {
           this.socket.emit("1V1CommunicateVideo",params)
           this.dialogSingle1V1Visible = false;
           this.$refs['dialogSingle1V1VisibleRef'].hangUp()
+          this.$router.go(0)
+      },
+      //1v1 phone
+      hangUpPhone(){
+          let data = {type:3,info:"挂断",username:this.userInfo.username}
+          let params = {userId:this.userInfo.userId,targetId:this.chatTarget.userId,targetName:this.chatTarget.chatName,targetType:this.chatTarget.type,data:data}
+          this.socket.emit("1V1CommunicatePhone",params)
+          this.dialogSingle1V1Phone = false;
+          this.$refs['dialogSingle1V1PhoneRef'].hangUp()
           this.$router.go(0)
       },
       //manyToMany
@@ -482,6 +514,47 @@ export default {
                   that.loadCommunicationUser()
               },2000)
           });
+          that.socket.on("1V1CommunicatePhone",function (e) {
+              console.log("1V1CommunicatePhone",e)
+              //呼叫
+              if(e.data.type===1){
+                  that.$confirm('用户'+e.data.username+' 是申请语音通话，是否接听?', '提示', {
+                      closeOnClickModal:false,
+                      closeOnPressEscape:false,
+                      confirmButtonText: '确定',
+                      cancelButtonText: '取消',
+                      type: 'warning'
+                  }).then(() => {
+                      let data = {type:2,info:"接通",username:that.userInfo.username}
+                      let params = {userId:that.userInfo.userId,targetId:e.data.userId,targetName:e.data.username,targetType:e.targetType,data:data}
+                      that.socket.emit("1V1CommunicatePhone",params)
+                      that.dialogSingle1V1Phone = true;
+                  }).catch(() => {
+                      let data = {type:3,info:"拒接",username:that.userInfo.username}
+                      let params = {userId:that.userInfo.userId,targetId:e.data.userId,targetName:e.data.username,targetType:e.targetType,data:data}
+                      that.socket.emit("1V1CommunicatePhone",params)
+                  });
+                  //用户接通通知
+              }else if(e.data.type===2){
+                  that.$message({
+                      type: 'info',
+                      message: e.data.username+'用户'+e.data.info
+                  });
+                  console.log(that.$refs)
+                  //接通后创建offer
+                  setTimeout(function () {
+                      that.$refs['dialogSingle1V1PhoneRef'].onCreateOffer();
+                  },2000)
+                  //拒接和挂断通知
+              }else if(e.data.type===3){
+                  that.$message({
+                      type: 'error',
+                      message: e.data.username+'用户'+e.data.info
+                  });
+                  that.dialogSingle1V1Phone = false;
+                  that.$router.go(0)
+              }
+          });
           that.socket.on("1V1CommunicateVideo",function (e) {
               console.log("1V1CommunicateVideo",e)
               //呼叫
@@ -575,6 +648,7 @@ export default {
               }
           })
       },
+      
       changeCss(params){
           this.chatObjectCSS[params]={
               'animation':"msg-me 2s infinite",
