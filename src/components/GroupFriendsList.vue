@@ -13,9 +13,10 @@
             <el-table-column label="操作">
                 <template slot-scope="scope">
                     <el-button
+                            :disabled="scope.row.type==2 ? true:false"
                             size="mini"
                             type="danger"
-                            @click="handleAccept(scope.$index, scope.row)">邀请</el-button> 
+                            @click="handleAccept(scope.$index, scope.row)">选择</el-button>
                 </template>
             </el-table-column>
         </el-table>
@@ -61,7 +62,11 @@ import {loadUserFriendsPage,createGroup} from '../api/commonApi'
             },
             handleAccept(index, row) {
                 const that = this;
-                that.invitedUserIds.push(row.userId)
+                if(that.invitedUserIds.indexOf(row.userId)==-1){
+                    that.invitedUserIds.push(row.userId)
+                }else {
+                    that.$message.error("以选择该好友，请勿重复选择")
+                }
             },
             close(){
                 this.$emit('friendsDialogHide');
